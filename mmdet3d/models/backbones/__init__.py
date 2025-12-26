@@ -6,4 +6,24 @@ from .sparse_encoder import *
 from .pillar_encoder import *
 from .vovnet import *
 from .dla import *
-from .radar_encoder import *
+from .dino_backbone import *
+# from .dino import *
+# from .radar_encoder import *
+__all__ = [
+    "SSDVGG",
+    "HRNet",
+    "ResNet",
+    "ResNetV1d",
+    "ResNeXt",
+    "GeneralizedResNet",
+    "SECOND",
+    "SparseEncoder",
+    "PillarFeatureNet", 
+    "PointPillarsScatter", 
+    "PointPillarsEncoder",
+    "VoVNet",
+    "DLA",
+    "DINOBackbone",
+    'DINOBackbone', 
+    'DINOWithFPN'
+]

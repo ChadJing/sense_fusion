@@ -122,7 +122,7 @@ class BEVFusion(Base3DFusionModel):
         x = x.view(B * N, C, H, W)
 
         x = self.encoders["camera"]["backbone"](x)
-        x = self.encoders["camera"]["neck"](x)
+        # x = self.encoders["camera"]["neck"](x)
 
         if not isinstance(x, torch.Tensor):
             x = x[0]

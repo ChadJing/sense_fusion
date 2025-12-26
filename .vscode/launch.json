@@ -1,0 +1,35 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+        "name": "debug test",
+        "type": "python",
+        "request": "launch",
+        "program": "-m",
+        "args": [
+            "torch.distributed.launch",
+            "--nproc_per_node=1",
+            "--master_addr=127.0.0.1",
+            "--master_port=29500",
+            "tools/train.py",
+            // "/home/czy/workspace/vscode_project/bevfusion_ori/bevfusion/configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml",
+            // "configs/czy/test.yaml",
+            "configs/dino_backbone_config.yaml",
+            // "--model.encoders.camera.backbone.init_cfg.checkpoint",
+            // "pretrained/swint-nuimages-pretrained.pth",
+            "--run-dir","results/",
+            "--launcher", "none",
+            "--data.num_gpus", "1"
+        ],
+        "console": "integratedTerminal",
+        "env": {
+            "CUDA_VISIBLE_DEVICES": "0",
+            "PYTHONPATH": "${workspaceFolder}"
+        },
+        "cwd": "${workspaceFolder}",
+        "justMyCode": false},
+    ]
+}
