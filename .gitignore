@@ -137,9 +137,9 @@ runs/*
 *_hip.*
 *.hip
 learning_test/
-pretrained/
 data/
 results/
 assets/
 docker/
 *.log
+pretrained/

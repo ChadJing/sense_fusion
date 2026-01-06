@@ -115,8 +115,8 @@ class BaseTransform(nn.Module):
                 points[:, :, :, :, :, :2] * points[:, :, :, :, :, 2:3],
                 points[:, :, :, :, :, 2:3],
             ),
-            5,
-        )
+            dim=5,
+        ) # [B, N, D, H, W, 3, 1]
         combine = camera2lidar_rots.matmul(torch.inverse(intrins))
         points = combine.view(B, N, 1, 1, 1, 3, 3).matmul(points).squeeze(-1)
         points += camera2lidar_trans.view(B, N, 1, 1, 1, 3)
@@ -133,7 +133,7 @@ class BaseTransform(nn.Module):
             extra_trans = kwargs["extra_trans"]
             points += extra_trans.view(B, 1, 1, 1, 1, 3).repeat(1, N, 1, 1, 1, 1)
 
-        return points
+        return points # the final points in lidar frame
 
     def get_cam_feats(self, x):
         raise NotImplementedError
@@ -278,9 +278,9 @@ class BaseDepthTransform(BaseTransform):
         if self.add_depth_features:
             depth_in_channels += points[0].shape[1]
 
-        depth = torch.zeros(batch_size, img.shape[1], depth_in_channels, *self.image_size, device=points[0].device)
+        depth = torch.zeros(batch_size, img.shape[1], depth_in_channels, *self.image_size, device=points[0].device) #[b,n,c,h,w]
 
-
+        # project points to image and fill in depth values
         for b in range(batch_size):
             cur_coords = points[b][:, :3]
             cur_img_aug_matrix = img_aug_matrix[b]

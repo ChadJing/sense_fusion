@@ -84,12 +84,13 @@ class DepthLSSTransform(BaseDepthTransform):
 
         d = d.view(B * N, *d.shape[2:])
         x = x.view(B * N, C, fH, fW)
-
+        # feature fusion with depth feature
         d = self.dtransform(d)
         x = torch.cat([d, x], dim=1)
+        # predict depth + new features
         x = self.depthnet(x)
 
-        depth = x[:, : self.D].softmax(dim=1)
+        depth = x[:, : self.D].softmax(dim=1) # [B*N, D, H, W] depth probability volume
         x = depth.unsqueeze(1) * x[:, self.D : (self.D + self.C)].unsqueeze(2)
 
         x = x.view(B, N, self.C, self.D, fH, fW)

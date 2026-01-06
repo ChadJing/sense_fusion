@@ -120,16 +120,13 @@ class BEVFusion(Base3DFusionModel):
     ) -> torch.Tensor:
         B, N, C, H, W = x.size()
         x = x.view(B * N, C, H, W)
-
         x = self.encoders["camera"]["backbone"](x)
         # x = self.encoders["camera"]["neck"](x)
-
         if not isinstance(x, torch.Tensor):
             x = x[0]
 
         BN, C, H, W = x.size()
         x = x.view(B, int(BN / B), C, H, W)
-
         x = self.encoders["camera"]["vtransform"](
             x,
             points,
@@ -335,7 +332,6 @@ class BEVFusion(Base3DFusionModel):
             x = features[0]
 
         batch_size = x.shape[0]
-
         x = self.decoder["backbone"](x)
         x = self.decoder["neck"](x)
 
