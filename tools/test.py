@@ -129,6 +129,7 @@ def main():
     if args.out is not None and not args.out.endswith((".pkl", ".pickle")):
         raise ValueError("The output file must be a pkl file.")
 
+    # load config file
     configs.load(args.config, recursive=True)
     cfg = Config(recursive_eval(configs), filename=args.config)
     print(cfg)
@@ -142,6 +143,7 @@ def main():
     cfg.model.pretrained = None
     # in case the test dataset is concatenated
     samples_per_gpu = 1
+    # load dataset test conifg
     if isinstance(cfg.data.test, dict):
         cfg.data.test.test_mode = True
         samples_per_gpu = cfg.data.test.pop("samples_per_gpu", 1)

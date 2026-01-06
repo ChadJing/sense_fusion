@@ -143,3 +143,4 @@ assets/
 docker/
 *.log
 pretrained/
+viz/

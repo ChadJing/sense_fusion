@@ -46,6 +46,9 @@
                 "configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml",
                 "pretrained/bevfusion-det.pth",
                 "--eval", "bbox",
+                "--out","/home/czy/workspace/vscode_project/bevfusion_ori/bevfusion/results/nuscenes_test_bevfusion.pkl",
+                "--show",
+                "--show-dir","/home/czy/workspace/vscode_project/bevfusion_ori/bevfusion/results/nuscenes_test_bevfusion_vis/",
 
             ],
             "console": "integratedTerminal",
@@ -56,5 +59,32 @@
             
             "cwd": "${workspaceFolder}",
             "justMyCode": false},
+            {
+                "name": "debug vis",
+                "type": "python",
+                "request": "launch",
+                "program": "-m",
+                "args": [
+                    "torch.distributed.launch",
+                    "--nproc_per_node=1",
+                    "--master_addr=127.0.0.1",
+                    "--master_port=29500",
+                    "tools/visualize.py",
+                    "configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml",
+                    "--mode", 
+                    "pred",
+                    "--checkpoint",
+                    "pretrained/bevfusion-det.pth",
+    
+                ],
+                "console": "integratedTerminal",
+                "env": {
+                    "CUDA_VISIBLE_DEVICES": "0",
+                    "PYTHONPATH": "${workspaceFolder}"
+                },
+                
+                "cwd": "${workspaceFolder}",
+                "justMyCode": false
+            },
     ]
 }
