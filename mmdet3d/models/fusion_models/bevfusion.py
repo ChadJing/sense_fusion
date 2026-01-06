@@ -14,6 +14,7 @@ from mmdet3d.models.builder import (
 )
 from mmdet3d.ops import Voxelization, DynamicScatter
 from mmdet3d.models import FUSIONMODELS
+from mmdet3d.models.backbones.dino_backbone import DINOBackbone
 
 
 from .base import Base3DFusionModel
@@ -121,7 +122,8 @@ class BEVFusion(Base3DFusionModel):
         B, N, C, H, W = x.size()
         x = x.view(B * N, C, H, W)
         x = self.encoders["camera"]["backbone"](x)
-        # x = self.encoders["camera"]["neck"](x)
+        if not isinstance(self.encoders["camera"]["backbone"], DINOBackbone):
+            x = self.encoders["camera"]["neck"](x) # if dino close it
         if not isinstance(x, torch.Tensor):
             x = x[0]
 
