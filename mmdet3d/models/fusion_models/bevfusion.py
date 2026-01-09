@@ -15,6 +15,7 @@ from mmdet3d.models.builder import (
 from mmdet3d.ops import Voxelization, DynamicScatter
 from mmdet3d.models import FUSIONMODELS
 from mmdet3d.models.backbones.dino_backbone import DINOBackbone
+from mmdet3d.models.vtransforms import BEVTransformer
 
 
 from .base import Base3DFusionModel
@@ -129,22 +130,45 @@ class BEVFusion(Base3DFusionModel):
 
         BN, C, H, W = x.size()
         x = x.view(B, int(BN / B), C, H, W)
-        x = self.encoders["camera"]["vtransform"](
-            x,
-            points,
-            radar_points,
-            camera2ego,
-            lidar2ego,
-            lidar2camera,
-            lidar2image,
-            camera_intrinsics,
-            camera2lidar,
-            img_aug_matrix,
-            lidar_aug_matrix,
-            img_metas,
-            depth_loss=self.use_depth_loss, 
-            gt_depths=gt_depths,
-        )
+
+        if isinstance(self.encoders["camera"]["vtransform"], BEVTransformer):
+            spatial_shapes = []
+            spatial_shapes.append(torch.tensor([x.shape[3], x.shape[4]], device=x.device))
+            spatial_shapes = torch.stack(spatial_shapes, 0)
+            level_start_index = torch.cat((
+                torch.zeros(1, device=x.device, dtype=torch.long),
+                torch.cumsum(spatial_shapes.prod(1), 0)[:-1]
+            ))
+            img_shape= img_metas[0]['img_shape'][:2]
+            # 因为sampleing中需要将lidar2image放到cpu上计算，所以这里提前转到cpu上，避免多次拷贝
+            # lidar2image_cpu=lidar2image.to('cpu') if lidar2image.is_cuda else lidar2image
+            x=x.permute(1,0,2,3,4)  # [num_cams, B, C, H, W]
+            x = self.encoders["camera"]["vtransform"](
+                x,
+                lidar2image,
+                spatial_shapes=spatial_shapes,
+                level_start_index=level_start_index,
+                img_shape=img_shape,
+                img_metas=img_metas,
+            )
+        else: # lss的方式
+            x = self.encoders["camera"]["vtransform"](
+                x,
+                points,
+                radar_points,
+                camera2ego,
+                lidar2ego,
+                lidar2camera,
+                lidar2image,
+                camera_intrinsics,
+                camera2lidar,
+                img_aug_matrix,
+                lidar_aug_matrix,
+                img_metas,
+                depth_loss=self.use_depth_loss, 
+                gt_depths=gt_depths,
+            )
+
         return x
     
     def extract_features(self, x, sensor) -> torch.Tensor:

@@ -16,10 +16,12 @@
             "--master_port=29500",
             "tools/train.py",
             // "/home/czy/workspace/vscode_project/bevfusion_ori/bevfusion/configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml",
-            // "configs/czy/test.yaml",
-            "configs/dino_backbone_config.yaml",
-            // "--model.encoders.camera.backbone.init_cfg.checkpoint",
-            // "pretrained/swint-nuimages-pretrained.pth",
+            "configs/swin_query_fuser.py",
+
+            // "configs/dino_backbone_config.yaml",
+            "--model.encoders.camera.backbone.init_cfg.checkpoint", "pretrained/swint-nuimages-pretrained.pth",
+            "--load_from", "pretrained/lidar-only-det.pth",
+
             "--run-dir","results/",
             "--launcher", "none",
             "--data.num_gpus", "1"

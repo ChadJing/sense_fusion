@@ -25,11 +25,12 @@ def main():
     parser.add_argument("--run-dir", metavar="DIR", help="run directory")
     args, opts = parser.parse_known_args()
 
-    configs.load(args.config, recursive=True)
-    configs.update(opts)
+    # configs.load(args.config, recursive=True)
+    # configs.update(opts)
 
-    cfg = Config(recursive_eval(configs), filename=args.config)
-
+    # cfg = Config(recursive_eval(configs), filename=args.config)
+    cfg=Config.fromfile(args.config)
+    cfg=Config(cfg['config_dict'])
     torch.backends.cudnn.benchmark = cfg.cudnn_benchmark
     torch.cuda.set_device(dist.local_rank())
 
@@ -40,7 +41,7 @@ def main():
     cfg.run_dir = args.run_dir
 
     # dump config
-    cfg.dump(os.path.join(cfg.run_dir, "configs.yaml"))
+    # cfg.dump(os.path.join(cfg.run_dir, "configs.py"))
 
     # init the logger before other steps
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())

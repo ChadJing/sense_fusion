@@ -30,6 +30,7 @@ ext_module = ext_loader.load_ext(
 __all__ = [
     'SpatialCrossAttention','MSDeformableAttention3D'
 ]
+
 @ATTENTION.register_module()
 class SpatialCrossAttention(BaseModule):
     """An attention module used in BEVFormer.
@@ -50,7 +51,7 @@ class SpatialCrossAttention(BaseModule):
                  pc_range=None,
                  dropout=0.1,
                  init_cfg=None,
-                 batch_first=False,
+                 batch_first=True,
                  deformable_attention=dict(
                      type='MSDeformableAttention3D',
                      embed_dims=256,
@@ -76,8 +77,8 @@ class SpatialCrossAttention(BaseModule):
     
     @force_fp32(apply_to=('query', 'key', 'value', 'query_pos', 'reference_points_cam'))
     def forward(self,
-                query,
-                key,
+                query, # [num_query, bs, embed_dims] or [bs, num_query, embed_dims]
+                key, # [N, bs, c, H, W]
                 value,
                 residual=None,
                 query_pos=None,
@@ -121,19 +122,20 @@ class SpatialCrossAttention(BaseModule):
         Returns:
              Tensor: forwarded results with shape [num_query, bs, embed_dims].
         """
-
-        if key is None:
-            key = query
-        if value is None:
-            value = key
-
+        if query_pos is not None:
+            query = query + query_pos
+        if not self.batch_first: # change to (bs, num_query ,embed_dims)
+            query = query.permute(1,0,2)
         if residual is None:
             inp_residual = query
             slots = torch.zeros_like(query)
-        if query_pos is not None:
-            query = query + query_pos
 
-        bs, num_query, _ = query.size()
+
+        bs,num_query,embed_dims = query.shape
+        N = self.num_cams
+
+        key = key.view(N,bs,embed_dims,-1).view(N*bs,self.embed_dims,-1).permute(2,0,1) # shape: (sum(H_l*W_l), bs*num_cams, embed_dims)
+        value = value.view(N,bs,embed_dims,-1).view(N*bs,self.embed_dims,-1).permute(2,0,1)
 
         D = reference_points_cam.size(3)
         indexes = []
@@ -141,11 +143,7 @@ class SpatialCrossAttention(BaseModule):
         for i, mask_per_img in enumerate(bev_mask):
             index_query_per_img = mask_per_img[0].sum(-1).nonzero().squeeze(-1) # shape: (num_valid_query,)
                 # 完全断开计算图并创建独立内存
-            index_query_per_img = index_query_per_img.detach().clone()
-            
-            # 确保类型稳定（索引必须是long）
-            if index_query_per_img.dtype != torch.long:
-                index_query_per_img = index_query_per_img.long()
+            index_query_per_img = index_query_per_img
             indexes.append(index_query_per_img) # 这里存储每个相机对应的有效BEV query的索引
         max_len = max([len(each) for each in indexes])
 
@@ -161,29 +159,31 @@ class SpatialCrossAttention(BaseModule):
                 queries_rebatch[j, i, :len(index_query_per_img)] = query[j, index_query_per_img]
                 reference_points_rebatch[j, i, :len(index_query_per_img)] = reference_points_per_img[j, index_query_per_img]
 
-        num_cams, l, bs, embed_dims = key.shape
-    
-        key = key.permute(2, 0, 1, 3).reshape(
-            bs * self.num_cams, l, self.embed_dims)
-        value = value.permute(2, 0, 1, 3).reshape(
-            bs * self.num_cams, l, self.embed_dims)
-
-        queries = self.deformable_attention(query=queries_rebatch.view(bs*self.num_cams, max_len, self.embed_dims), key=key, value=value,
+        queries_rebatch=queries_rebatch.reshape(bs*self.num_cams, max_len, self.embed_dims)
+        queries = self.deformable_attention(query = queries_rebatch.permute(1,0,2), key=key, value=value,
                                             reference_points=reference_points_rebatch.view(bs*self.num_cams, max_len, D, 2), spatial_shapes=spatial_shapes,
-                                            level_start_index=level_start_index).view(bs, self.num_cams, max_len, self.embed_dims)
+                                            level_start_index=level_start_index) 
+        if not self.batch_first:
+            queries = queries.permute(1,0,2) # shape: (bs*num_cams, max_len, embed_dims)
+        queries = queries.view(bs, self.num_cams, max_len, embed_dims)
+
         if torch.cuda.is_available():
             torch.cuda.synchronize()
         for j in range(bs):
             for i, index_query_per_img in enumerate(indexes):
                 slots[j, index_query_per_img] += queries[j, i, :len(index_query_per_img)] # slots shape: (B, num_query, embed_dims)此处num_query表示所有BEV query(h*W)
-
+        
+        # mean fusion
         count = bev_mask.sum(-1) > 0
         count = count.permute(1, 2, 0).sum(-1)
         count = torch.clamp(count, min=1.0)
         slots = slots / count[..., None]
+        # 输出层和残差连接
         slots = self.output_proj(slots)
-
-        return self.dropout(slots) + inp_residual
+        output=self.dropout(slots) + inp_residual
+        if not self.batch_first:
+            output = output.permute(1,0,2)
+        return output
 
 
 @ATTENTION.register_module()
@@ -347,9 +347,9 @@ class MSDeformableAttention3D(BaseModule):
         if key_padding_mask is not None:
             value = value.masked_fill(key_padding_mask[..., None], 0.0)
         value = value.view(bs, num_value, self.num_heads, -1)
-        sampling_offsets = self.sampling_offsets(query).view(
+        sampling_offsets = self.sampling_offsets(query).contiguous().view(
             bs, num_query, self.num_heads, self.num_levels, self.num_points, 2)
-        attention_weights = self.attention_weights(query).view(
+        attention_weights = self.attention_weights(query).contiguous().view(
             bs, num_query, self.num_heads, self.num_levels * self.num_points)
 
         attention_weights = attention_weights.softmax(-1)
@@ -406,6 +406,6 @@ class MSDeformableAttention3D(BaseModule):
             output = multi_scale_deformable_attn_pytorch(
                 value, spatial_shapes, sampling_locations, attention_weights)
         if not self.batch_first:
-            output = output.permute(1, 0, 2)
+            output = output.permute(1, 0, 2).contiguous()
 
         return output
