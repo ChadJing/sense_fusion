@@ -16,7 +16,7 @@ from mmdet3d.ops import Voxelization, DynamicScatter
 from mmdet3d.models import FUSIONMODELS
 from mmdet3d.models.backbones.dino_backbone import DINOBackbone
 from mmdet3d.models.vtransforms import BEVTransformer
-
+from ..utils.flatten_and_concate import flatten_and_concat_features
 
 from .base import Base3DFusionModel
 
@@ -125,26 +125,27 @@ class BEVFusion(Base3DFusionModel):
         x = self.encoders["camera"]["backbone"](x)
         if not isinstance(self.encoders["camera"]["backbone"], DINOBackbone):
             x = self.encoders["camera"]["neck"](x) # if dino close it
-        if not isinstance(x, torch.Tensor):
-            x = x[0]
-
-        BN, C, H, W = x.size()
-        x = x.view(B, int(BN / B), C, H, W)
+        if isinstance(x, torch.Tensor):
+            BN, C, H, W = x.size()
+            x = x.view(B, int(BN / B), C, H, W)
 
         if isinstance(self.encoders["camera"]["vtransform"], BEVTransformer):
             spatial_shapes = []
-            spatial_shapes.append(torch.tensor([x.shape[3], x.shape[4]], device=x.device))
+            # x[0].shape: [BN, C, H, W]
+            for f_img in x:
+                spatial_shapes.append(torch.tensor([f_img.shape[2], f_img.shape[3]], device=f_img.device))
             spatial_shapes = torch.stack(spatial_shapes, 0)
             level_start_index = torch.cat((
-                torch.zeros(1, device=x.device, dtype=torch.long),
+                torch.zeros(1, device=x[0].device, dtype=torch.long),
                 torch.cumsum(spatial_shapes.prod(1), 0)[:-1]
             ))
+            # flatten_and_concate
+            x_flatten = flatten_and_concat_features(x)  # [L, B*num_cams, C]
             img_shape= img_metas[0]['img_shape'][:2]
             # 因为sampleing中需要将lidar2image放到cpu上计算，所以这里提前转到cpu上，避免多次拷贝
             # lidar2image_cpu=lidar2image.to('cpu') if lidar2image.is_cuda else lidar2image
-            x=x.permute(1,0,2,3,4)  # [num_cams, B, C, H, W]
             x = self.encoders["camera"]["vtransform"](
-                x,
+                x_flatten,
                 lidar2image,
                 spatial_shapes=spatial_shapes,
                 level_start_index=level_start_index,

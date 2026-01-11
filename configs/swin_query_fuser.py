@@ -328,7 +328,7 @@ config_dict = {
                         'type': 'GridMask',
                         'prob': 0.0,
                         'fixed_prob': True,
-                        'max_epoch': 6,
+                        'max_epoch': 100,
                         'mode': 1,
                         'ratio': 0.5,
                         'rotate': 1,
@@ -449,7 +449,7 @@ config_dict = {
                 'vtransform': {
                     'type': 'BEVTransformer',
                     'num_cams': 6,
-                    'num_levels': 4,
+                    'num_levels': 2,
                     'embed_dims': 256,
                     'bev_h': 180,
                     'bev_w': 180,
@@ -652,10 +652,10 @@ config_dict = {
     # ============ 训练运行配置 ============
     'runner': {
         'type': 'CustomEpochBasedRunner',
-        'max_epochs': 6
+        'max_epochs': 100
     },
     
-    'max_epochs': 6,
+    'max_epochs': 100,
     'gt_paste_stop_epoch': -1,
     
     # ============ 评估配置 ============
@@ -675,6 +675,7 @@ config_dict = {
     
     # ============ 检查点与恢复 ============
     'load_from': 'pretrained/lidar-only-det.pth',
+    # 'resume_from': 'results/epoch_5.pth',
     'resume_from': None,
     
     # ============ 混合精度训练 ============

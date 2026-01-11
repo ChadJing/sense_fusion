@@ -78,7 +78,7 @@ class SpatialCrossAttention(BaseModule):
     @force_fp32(apply_to=('query', 'key', 'value', 'query_pos', 'reference_points_cam'))
     def forward(self,
                 query, # [num_query, bs, embed_dims] or [bs, num_query, embed_dims]
-                key, # [N, bs, c, H, W]
+                key, # [l, bn, c]
                 value,
                 residual=None,
                 query_pos=None,
@@ -134,8 +134,8 @@ class SpatialCrossAttention(BaseModule):
         bs,num_query,embed_dims = query.shape
         N = self.num_cams
 
-        key = key.view(N,bs,embed_dims,-1).view(N*bs,self.embed_dims,-1).permute(2,0,1) # shape: (sum(H_l*W_l), bs*num_cams, embed_dims)
-        value = value.view(N,bs,embed_dims,-1).view(N*bs,self.embed_dims,-1).permute(2,0,1)
+        # key = key.view(N,bs,embed_dims,-1).contiguous().view(N*bs,self.embed_dims,-1).permute(2,0,1) # shape: (sum(H_l*W_l), bs*num_cams, embed_dims)
+        # value = value.view(N,bs,embed_dims,-1).contiguous().view(N*bs,self.embed_dims,-1).permute(2,0,1)
 
         D = reference_points_cam.size(3)
         indexes = []
@@ -370,9 +370,11 @@ class MSDeformableAttention3D(BaseModule):
                 [spatial_shapes[..., 1], spatial_shapes[..., 0]], -1)
 
             bs, num_query, num_Z_anchors, xy = reference_points.shape
-            reference_points = reference_points[:, :, None, None, None, :, :]
-            sampling_offsets = sampling_offsets / \
-                offset_normalizer[None, None, None, :, None, :]
+            reference_points = reference_points[:, :, None, None, None, :, :] #[bs, num_query, 1, 1, num_Z_anchors, 1, 2]
+            offset_normalizer=offset_normalizer[None ,None, None, :,None, :]
+            #sampling_offsets[bs, num_query, self.num_heads, self.num_levels, self.num_points, 2]
+            sampling_offsets = sampling_offsets / offset_normalizer #[1,1,1,num_levels, 1,1,2]
+            
             bs, num_query, num_heads, num_levels, num_all_points, xy = sampling_offsets.shape
             sampling_offsets = sampling_offsets.view(
                 bs, num_query, num_heads, num_levels, num_all_points // num_Z_anchors, num_Z_anchors, xy)

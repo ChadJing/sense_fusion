@@ -211,7 +211,7 @@ class BEVTransformer(nn.Module):
         return reference_points_cam, bev_mask
     
     def forward(self, 
-                multi_cam_features,  # 多相机特征 [num_cams, bs, C, H, W]
+                multi_cam_features,  # (l,bn,c)
                 lidar2img,           # 相机投影矩阵 [bs, num_cams, 4, 4]
                 spatial_shapes,      # 多尺度特征图形状 [num_levels, 2]
                 level_start_index,   # 各层起始索引 [num_levels]
@@ -221,27 +221,23 @@ class BEVTransformer(nn.Module):
         前向传播
         
         参数:
-            multi_cam_features: 多相机特征 [num_cams, bs, C, H, W]
+            multi_cam_features: 多相机特征 tuple([num_cams, bs, C, H, W])
             lidar2img: LiDAR到图像的投影矩阵 [bs, num_cams, 4, 4]
             spatial_shapes: 特征金字塔形状 [num_levels, 2]
             level_start_index: 各层起始索引 [num_levels]
         """
         
-        batch_size = multi_cam_features.shape[1]
+        batch_size = lidar2img.size(0)
         device = multi_cam_features.device
         
         # 1. 准备BEV查询和位置编码
         bev_query = self.get_bev_queries(batch_size, device)  # [num_query, bs, embed_dims]
         bev_pos = self.get_bev_position_encoding(batch_size, device)  # [num_query, bs, embed_dims]
         
-        # 2. 准备key/value（多相机特征）
-        # 将特征图展平并拼接
-        num_cams, bs, C, H, W = multi_cam_features.shape
-        num_levels = spatial_shapes.shape[0]
         
         # 这里假设multi_cam_features已经是展平的特征
         # 实际中需要根据spatial_shapes展平多尺度特征
-        key = multi_cam_features  # [num_cams, bs, C, H, W] 或 [num_cams, bs, total_pixels, C]
+        key = multi_cam_features #(L, bs*num_cams, embed_dims)
         value = multi_cam_features
         ref_3d = BEVTransformer.get_reference_points(
             H=self.bev_h, 
