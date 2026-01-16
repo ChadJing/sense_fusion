@@ -322,6 +322,7 @@ class BEVFusion(Base3DFusionModel):
             self.encoders if self.training else list(self.encoders.keys())[::-1]
         ):
             if sensor == "camera":
+                # 得到的是转换完成的BEV特征
                 feature = self.extract_camera_features(
                     img,
                     points,

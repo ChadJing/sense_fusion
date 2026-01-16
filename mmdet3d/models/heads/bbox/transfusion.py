@@ -216,7 +216,7 @@ class TransFusionHead(nn.Module):
         """Forward function for CenterPoint.
         Args:
             inputs (torch.Tensor): Input feature map with the shape of
-                [B, 512, 128(H), 128(W)]. (consistent with L748)
+                [B, 512, 128(BEV_H), 128(BEV_W)]. (consistent with L748)
         Returns:
             list[dict]: Output results for tasks.
         """
@@ -229,12 +229,12 @@ class TransFusionHead(nn.Module):
         lidar_feat_flatten = lidar_feat.view(
             batch_size, lidar_feat.shape[1], -1
         )  # [BS, C, H*W]
-        bev_pos = self.bev_pos.repeat(batch_size, 1, 1).to(lidar_feat.device)
+        bev_pos = self.bev_pos.repeat(batch_size, 1, 1).to(lidar_feat.device) # [BS, H*W, 2]
 
         #################################
         # image guided query initialization
         #################################
-        dense_heatmap = self.heatmap_head(lidar_feat)
+        dense_heatmap = self.heatmap_head(lidar_feat) #[bs, num_classes, H, W]
         dense_heatmap_img = None
         heatmap = dense_heatmap.detach().sigmoid()
         padding = self.nms_kernel_size // 2
@@ -263,7 +263,7 @@ class TransFusionHead(nn.Module):
                 :,
                 2,
             ] = F.max_pool2d(heatmap[:, 2], kernel_size=1, stride=1, padding=0)
-        heatmap = heatmap * (heatmap == local_max)
+        heatmap = heatmap * (heatmap == local_max) # heatmap == local_max生成的mask，只保留局部最大值位置的heatmap值
         heatmap = heatmap.view(batch_size, heatmap.shape[1], -1)
 
         # top #num_proposals among all classes
@@ -378,7 +378,7 @@ class TransFusionHead(nn.Module):
             list_of_pred_dict.append(pred_dict)
 
         assert len(gt_bboxes_3d) == len(list_of_pred_dict)
-
+        # multi_apply 相当于将 get_targets_single 应用于每个 batch 上
         res_tuple = multi_apply(
             self.get_targets_single,
             gt_bboxes_3d,
