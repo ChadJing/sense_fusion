@@ -15,7 +15,7 @@ from mmdet3d.apis import train_model
 from mmdet3d.datasets import build_dataset
 from mmdet3d.models import build_model
 from mmdet3d.utils import get_root_logger, convert_sync_batchnorm, recursive_eval
-
+import mmdet3d.hook
 
 def main():
     # dist.init()
@@ -72,6 +72,18 @@ def main():
         if not isinstance(cfg["sync_bn"], dict):
             cfg["sync_bn"] = dict(exclude=[])
         model = convert_sync_batchnorm(model, exclude=cfg["sync_bn"]["exclude"])
+        # 检查Hook是否已注册
+    from mmcv.runner import HOOKS
+    
+    logger.info("检查已注册的Hook:")
+    for hook_name in HOOKS._module_dict.keys():
+        logger.info(f"  - {hook_name}")
+    
+    # 检查StageFreezeHook是否已注册
+    if 'SimpleFreezeHook' in HOOKS._module_dict:
+        logger.info("✓ StageFreezeHook已成功注册")
+    else:
+        logger.warning("✗ StageFreezeHook未注册")
 
     logger.info(f"Model:\n{model}")
     train_model(

@@ -12,6 +12,8 @@ from mmcv.runner import (
 from mmdet3d.runner import CustomEpochBasedRunner
 
 from mmdet3d.utils import get_root_logger
+from mmcv.utils import build_from_cfg
+
 from mmdet.core import DistEvalHook
 from mmdet.datasets import build_dataloader, build_dataset, replace_ImageToTensor
 
@@ -99,6 +101,16 @@ def train_model(
         cfg.log_config,
         cfg.get("momentum_config", None),
     )
+        # 添加自定义Hook
+    if cfg.get('custom_hooks', None):
+        custom_hooks = cfg.custom_hooks
+        from mmcv.runner import HOOKS
+        for hook_cfg in custom_hooks:
+            hook_cfg = hook_cfg.copy()
+            priority = hook_cfg.pop('priority', 'NORMAL')
+            hook = build_from_cfg(hook_cfg, HOOKS)
+            runner.register_hook(hook, priority=priority)
+    
     if isinstance(runner, EpochBasedRunner):
         runner.register_hook(DistSamplerSeedHook())
 
