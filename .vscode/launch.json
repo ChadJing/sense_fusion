@@ -23,17 +23,50 @@
             "--load_from", "pretrained/lidar-only-det.pth",
 
             "--run-dir","results/",
-            "--launcher", "none",
+            // "--launcher", "none",
             "--data.num_gpus", "1"
         ],
         "console": "integratedTerminal",
         "env": {
             "CUDA_VISIBLE_DEVICES": "0",
-            "PYTHONPATH": "${workspaceFolder}"
+            "PYTHONPATH": "${workspaceFolder}",
+            "MASTER_ADDR": "127.0.0.2",
+            "MASTER_PORT": "29500",
+            "RANK": "0",
+            "WORLD_SIZE": "1"
         },
         
         "cwd": "${workspaceFolder}",
-        "justMyCode": false},
+        "justMyCode": false
+    },
+        
+        {
+        "name": "debug single gpu train",
+        "type": "python",
+        "request": "launch",
+        "program": "tools/train.py",
+        "args": [
+            // "/home/czy/workspace/vscode_project/bevfusion_ori/bevfusion/configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml",
+            // "configs/swin_query_fuser.py",
+            // "configs/swin_fuser.py",
+            "configs/swin_fuser_frozen.py",
+
+            // "configs/dino_backbone_config.yaml",
+            "--model.encoders.camera.backbone.init_cfg.checkpoint", "pretrained/swint-nuimages-pretrained.pth",
+            "--load_from", "pretrained/lidar-only-det.pth",
+
+            "--run-dir","results/",
+            "--data.num_gpus", "1"
+        ],
+        "console": "integratedTerminal",
+        "env": {
+            "CUDA_VISIBLE_DEVICES": "0",
+            "PYTHONPATH": "${workspaceFolder}",
+        },
+        
+        "cwd": "${workspaceFolder}",
+        // "justMyCode": false
+    },
         {
             "name": "debug test",
             "type": "python",

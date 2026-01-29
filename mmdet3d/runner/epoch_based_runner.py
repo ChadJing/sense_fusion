@@ -11,4 +11,12 @@ class CustomEpochBasedRunner(EpochBasedRunner):
         # update the schedule for data augmentation
         for dataset in self._dataset:
             dataset.set_epoch(self.epoch)
+
+        import torch.distributed as dist
+        import os
+        if not dist.is_initialized():
+            os.environ['MASTER_ADDR'] = 'localhost'
+            os.environ['MASTER_PORT'] = '12345'
+            dist.init_process_group(backend='nccl',rank=0, world_size = 1)
+
         super().train(data_loader, **kwargs)

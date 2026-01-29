@@ -11,15 +11,32 @@ map_classes_list=[
     'stop_line', 'carpark_area', 'divider'
 ]
 object_classes_list = [
-        'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
-        'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+        'Car', 'Pedestrian', 'Cyclist'
     ]
-point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
+point_cloud_range = [ 0, -40.8, -3.0, 72.0, 40.8, 1.0]
+sparse_shape = [960, 1088, 41]
+data_prefix_train= {
+    'img': 'training/image_2', 
+    'pts': 'training/velodyne'
+    }
+
+data_prefix_val = {
+    'img': 'training/image_2', 
+    'pts': 'training/velodyne'
+}
+backend_args = None
+dataset_type= 'KittiDataset'
+dataset_root= 'data/kitti/'
+metainfo = dict(classes=object_classes_list)
+
+voxel_size = [0.075, 0.075, 0.1]
 test_val_eval_pipeline = [
                 # 1. 加载多视角图像
                 {
-                    'type': 'LoadMultiViewImageFromFiles',
-                    'to_float32': True
+                    'type': 'BEVLoadMonoViewImageFromFile',
+                    'to_float32': True,
+                    'color_type': 'color',
+                    'backend_args': backend_args,
                 },
                 
                 # 2. 加载LiDAR点云
@@ -32,57 +49,57 @@ test_val_eval_pipeline = [
                     'load_augmented': None
                 },
                 
-                # 3. 加载多帧点云
-                {
-                    'type': 'LoadPointsFromMultiSweeps',
-                    'sweeps_num': 0,
-                    'load_dim': 5,
-                    'use_dim': 5,
-                    'pad_empty_sweeps': True,
-                    'remove_close': True,
-                    'reduce_beams': 32,
-                    'load_augmented': None
-                },
+                # # 3. 加载多帧点云
+                # {
+                #     'type': 'LoadPointsFromMultiSweeps',
+                #     'sweeps_num': 0,
+                #     'load_dim': 5,
+                #     'use_dim': 5,
+                #     'pad_empty_sweeps': True,
+                #     'remove_close': True,
+                #     'reduce_beams': 32,
+                #     'load_augmented': None
+                # },
                 
-                # 4. 加载Radar点云  TODO: 确定是否需要加载Radar 点云
-                {
-                    'type': 'LoadRadarPointsMultiSweeps',
-                    'sweeps_num': 6,
-                    'load_dim': 18,
-                    'use_dim': list(range(1, 57)),  # 使用1-56维度
-                    'max_num': 2500,
-                    'normalize': False,
-                    'compensate_velocity': True,
-                    'filtering': 'none'
-                },
+                # # 4. 加载Radar点云  TODO: 确定是否需要加载Radar 点云
+                # {
+                #     'type': 'LoadRadarPointsMultiSweeps',
+                #     'sweeps_num': 6,
+                #     'load_dim': 18,
+                #     'use_dim': list(range(1, 57)),  # 使用1-56维度
+                #     'max_num': 2500,
+                #     'normalize': False,
+                #     'compensate_velocity': True,
+                #     'filtering': 'none'
+                # },
                 
-                # 5. 加载3D标注
-                {
-                    'type': 'LoadAnnotations3D',
-                    'with_bbox_3d': True,
-                    'with_label_3d': True,
-                    'with_attr_label': False
-                },
+                # # 5. 加载3D标注
+                # {
+                #     'type': 'LoadAnnotations3D',
+                #     'with_bbox_3d': True,
+                #     'with_label_3d': True,
+                #     'with_attr_label': False
+                # },
                 
                 # 6. 图像数据增强
                 {
                     'type': 'ImageAug3D',
                     'is_train': False,
-                    'final_dim': [256, 704],
-                    'resize_lim': [0.48, 0.48],
+                    'final_dim': [288, 1120],
+                    'resize_lim': [0.88, 0.88],
                     'rot_lim': [0.0, 0.0],
                     'bot_pct_lim': [0.0, 0.0],
                     'rand_flip': False
                 },
                 
-                # 7. 全局3D变换
-                {
-                    'type': 'GlobalRotScaleTrans',
-                    'is_train': False,
-                    'resize_lim': [1.0, 1.0],
-                    'rot_lim': [0.0, 0.0],
-                    'trans_lim': 0.0
-                },
+                # # 7. 全局3D变换
+                # {
+                #     'type': 'GlobalRotScaleTrans',
+                #     'is_train': False,
+                #     'resize_lim': [1.0, 1.0],
+                #     'rot_lim': [0.0, 0.0],
+                #     'trans_lim': 0.0
+                # },
                 
                 # 8. 点云范围过滤
                 {
@@ -90,38 +107,38 @@ test_val_eval_pipeline = [
                     'point_cloud_range': point_cloud_range
                 },
                 
-                # 9. 图像归一化
-                {
-                    'type': 'ImageNormalize',
-                    'mean': [0.485, 0.456, 0.406],
-                    'std': [0.229, 0.224, 0.225]
-                },
+                # # 9. 图像归一化
+                # {
+                #     'type': 'ImageNormalize',
+                #     'mean': [0.485, 0.456, 0.406],
+                #     'std': [0.229, 0.224, 0.225]
+                # },
                 
-                # 10. 数据格式化
-                {
-                    'type': 'DefaultFormatBundle3D',
-                    'classes': [
-                        'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
-                        'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
-                    ]
-                },
+                # # 10. 数据格式化
+                # {
+                #     'type': 'DefaultFormatBundle3D',
+                #     'classes': [
+                #         'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+                #         'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+                #     ]
+                # },
                 
                 # 11. 数据收集
                 {
-                    'type': 'Collect3D',
-                    'keys': ['img', 'points', 'radar', 'gt_bboxes_3d', 'gt_labels_3d'],
+                    'type': 'Pack3DDetInputs',
+                    'keys': ['img', 'points', 'gt_bboxes_3d', 'gt_labels_3d'],
                     'meta_keys': [
-                        'camera_intrinsics', 'camera2ego', 'lidar2ego',
-                        'lidar2camera', 'lidar2image', 'camera2lidar',
-                        'img_aug_matrix', 'lidar_aug_matrix'
+                        'cam2img', 'ori_cam2img', 'lidar2cam', 'lidar2img', 'cam2lidar',
+                        'ori_lidar2img', 'img_aug_matrix', 'box_type_3d', 'sample_idx',
+                        'lidar_path', 'img_path', 'num_pts_feats'
                     ]
                 },
                 
-                # 12. 生成GT深度图
-                {
-                    'type': 'GTDepth', 
-                    'keyframe_only': True
-                }
+                # # 12. 生成GT深度图
+                # {
+                #     'type': 'GTDepth', 
+                #     'keyframe_only': True
+                # }
             ]
 
 config_dict = {
@@ -158,12 +175,13 @@ config_dict = {
         
         # 测试集配置
         'test': {
-            'type': 'NuScenesDataset',
-            'dataset_root': 'data/nuscenes/',
+            'type': dataset_type,
+            'dataset_root': dataset_root,
             'ann_file': 'data/nuscenes/nuscenes_infos_val.pkl',
             'test_mode': True,
             'box_type_3d': 'LiDAR',
-            
+            'data_prefix': data_prefix_train,
+            'metainfo': metainfo,
             # 传感器模态
             'modality': input_modality_dict,
             
@@ -198,35 +216,40 @@ config_dict = {
                 # 训练数据处理流水线（更复杂，包含数据增强）
                 'pipeline': [
                     # 1-4. 数据加载（与测试集相同）
-                    {'type': 'LoadMultiViewImageFromFiles', 'to_float32': True},
+                    {'type': 'BEVLoadMonoViewImageFromFile', 
+                     'to_float32': True,
+                     'color_type': 'color',
+                     'num_views': 1,
+                     'backend_args': backend_args
+                     },
                     {
                         'type': 'LoadPointsFromFile',
                         'coord_type': 'LIDAR',
                         'load_dim': 5,
                         'use_dim': 5,
-                        'reduce_beams': 32,
+                        # 'reduce_beams': 32,
                         'load_augmented': None
                     },
-                    {
-                        'type': 'LoadPointsFromMultiSweeps',
-                        'sweeps_num': 0,  # 训练时使用0帧
-                        'load_dim': 5,
-                        'use_dim': 5,
-                        'pad_empty_sweeps': True,
-                        'remove_close': True,
-                        'reduce_beams': 32,
-                        'load_augmented': None
-                    },
-                    { #TODO: 确定是否需要加载Radar 点云
-                        'type': 'LoadRadarPointsMultiSweeps',
-                        'sweeps_num': 6,
-                        'load_dim': 18,
-                        'use_dim': list(range(1, 57)),
-                        'max_num': 2500,
-                        'normalize': False,
-                        'compensate_velocity': True,
-                        'filtering': 'none'
-                    },
+                    # {
+                    #     'type': 'LoadPointsFromMultiSweeps',
+                    #     'sweeps_num': 0,  # 训练时使用0帧
+                    #     'load_dim': 5,
+                    #     'use_dim': 5,
+                    #     'pad_empty_sweeps': True,
+                    #     'remove_close': True,
+                    #     'reduce_beams': 32,
+                    #     'load_augmented': None
+                    # },
+                    # { #TODO: 确定是否需要加载Radar 点云
+                    #     'type': 'LoadRadarPointsMultiSweeps',
+                    #     'sweeps_num': 6,
+                    #     'load_dim': 18,
+                    #     'use_dim': list(range(1, 57)),
+                    #     'max_num': 2500,
+                    #     'normalize': False,
+                    #     'compensate_velocity': True,
+                    #     'filtering': 'none'
+                    # },
                     
                     # 5. 加载3D标注
                     {
@@ -236,70 +259,70 @@ config_dict = {
                         'with_attr_label': False
                     },
                     
-                    # 6. 数据增强：物体粘贴（增强小样本）
-                    {
-                        'type': 'ObjectPaste',
-                        'stop_epoch': -1,
-                        'db_sampler': {
-                            'rate': 1.0,
-                            'dataset_root': 'data/nuscenes/',
-                            'info_path': 'data/nuscenes/nuscenes_dbinfos_train.pkl',
-                            'points_loader': {
-                                'type': 'LoadPointsFromFile',
-                                'coord_type': 'LIDAR',
-                                'load_dim': 5,
-                                'use_dim': 5,
-                                'reduce_beams': 32
-                            },
+                    # # 6. 数据增强：物体粘贴（增强小样本）
+                    # {
+                    #     'type': 'ObjectPaste',
+                    #     'stop_epoch': -1,
+                    #     'db_sampler': {
+                    #         'rate': 1.0,
+                    #         'dataset_root': 'data/nuscenes/',
+                    #         'info_path': 'data/nuscenes/nuscenes_dbinfos_train.pkl',
+                    #         'points_loader': {
+                    #             'type': 'LoadPointsFromFile',
+                    #             'coord_type': 'LIDAR',
+                    #             'load_dim': 5,
+                    #             'use_dim': 5,
+                    #             'reduce_beams': 32
+                    #         },
 
-                            'prepare': {
-                                'filter_by_difficulty': [-1],
-                                'filter_by_min_points': {
-                                    'car': 5, 'truck': 5, 'bus': 5,
-                                    'trailer': 5, 'construction_vehicle': 5,
-                                    'motorcycle': 5, 'bicycle': 5,
-                                    'pedestrian': 5, 'barrier': 5,
-                                    'traffic_cone': 5
-                                }
-                            },
-                            'sample_groups': {
-                                'car': 2, 'truck': 3, 'bus': 4,
-                                'trailer': 6, 'construction_vehicle': 7,
-                                'motorcycle': 6, 'bicycle': 6,
-                                'pedestrian': 2, 'barrier': 2,
-                                'traffic_cone': 2
-                            },
-                            'classes': [
-                                'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
-                                'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
-                            ]
-                        }
-                    },
+                    #         'prepare': {
+                    #             'filter_by_difficulty': [-1],
+                    #             'filter_by_min_points': {
+                    #                 'car': 5, 'truck': 5, 'bus': 5,
+                    #                 'trailer': 5, 'construction_vehicle': 5,
+                    #                 'motorcycle': 5, 'bicycle': 5,
+                    #                 'pedestrian': 5, 'barrier': 5,
+                    #                 'traffic_cone': 5
+                    #             }
+                    #         },
+                    #         'sample_groups': {
+                    #             'car': 2, 'truck': 3, 'bus': 4,
+                    #             'trailer': 6, 'construction_vehicle': 7,
+                    #             'motorcycle': 6, 'bicycle': 6,
+                    #             'pedestrian': 2, 'barrier': 2,
+                    #             'traffic_cone': 2
+                    #         },
+                    #         'classes': [
+                    #             'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+                    #             'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+                    #         ]
+                    #     }
+                    # },
                     
                     # 7. 图像数据增强（训练时启用）
                     {
                         'type': 'ImageAug3D',
                         'is_train': True,
-                        'final_dim': [256, 704],
-                        'resize_lim': [0.38, 0.55],
-                        'rot_lim': [-5.4, 5.4],
+                        'final_dim': [288, 1120],
+                        'resize_lim': [0.78, 0.95],
+                        'rot_lim': [-2.7, 2.7],
                         'bot_pct_lim': [0.0, 0.0],
-                        'rand_flip': True
+                        'rand_flip': True,
+                        'is_train': True
                     },
                     
                     # 8. 全局3D变换（训练时启用）
                     {
                         'type': 'GlobalRotScaleTrans',
                         'is_train': True,
-                        'resize_lim': [0.9, 1.1],
-                        'rot_lim': [-0.78539816, 0.78539816],
+                        'resize_lim': [0.95, 1.05],
+                        'rot_lim': [-0.39269908, 0.39269908],
                         'trans_lim': 0.5
                     },
                     
                     # 9. 随机翻转
-                    {'type': 'RandomFlip3D'},
-                    
-                    # 10-12. 过滤操作 todo 为什么有两个PointsRangeFilter
+                    {'type': 'RandomFlip3D',
+                     'flip_vertical': False},
                     {
                         'type': 'PointsRangeFilter',
                         'point_cloud_range': point_cloud_range
@@ -310,23 +333,20 @@ config_dict = {
                     },
                     {
                         'type': 'ObjectNameFilter',
-                        'classes': [
-                            'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
-                            'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
-                        ]
+                        'classes': object_classes_list
                     },
                     
-                    # 13. 图像归一化
-                    {
-                        'type': 'ImageNormalize',
-                        'mean': [0.485, 0.456, 0.406],
-                        'std': [0.229, 0.224, 0.225]
-                    },
+                    # # 13. 图像归一化
+                    # {
+                    #     'type': 'ImageNormalize',
+                    #     'mean': [0.485, 0.456, 0.406],
+                    #     'std': [0.229, 0.224, 0.225]
+                    # },
                     
                     # 14. GridMask增强
                     {
                         'type': 'GridMask',
-                        'prob': 0.5,
+                        'prob': 0.0,
                         'fixed_prob': True,
                         'max_epoch': 6,
                         'mode': 1,
@@ -340,24 +360,26 @@ config_dict = {
                     # 15. 点云打乱
                     {'type': 'PointShuffle'},
                     
-                    # 16-18. 数据格式化、收集、GT深度（与测试集相同）
+                    # # 16-18. 数据格式化、收集、GT深度（与测试集相同）
+                    # {
+                    #     'type': 'DefaultFormatBundle3D',
+                    #     'classes': [
+                    #         'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
+                    #         'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+                    #     ]
+                    # },
                     {
-                        'type': 'DefaultFormatBundle3D',
-                        'classes': [
-                            'car', 'truck', 'construction_vehicle', 'bus', 'trailer',
-                            'barrier', 'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
-                        ]
-                    },
-                    {
-                        'type': 'Collect3D',
-                        'keys': ['img', 'points', 'radar', 'gt_bboxes_3d', 'gt_labels_3d'],
+                        'type': 'Pack3DDetInputs',
+                        'keys': ['img', 'points', 'gt_bboxes_3d', 'gt_labels_3d','gt_bboxes', 'gt_labels'],
                         'meta_keys': [
-                            'camera_intrinsics', 'camera2ego', 'lidar2ego',
-                            'lidar2camera', 'lidar2image', 'camera2lidar',
-                            'img_aug_matrix', 'lidar_aug_matrix'
+                            'cam2img', 'ori_cam2img', 'lidar2cam', 'lidar2img', 'cam2lidar',
+                            'ori_lidar2img', 'img_aug_matrix', 'box_type_3d', 'sample_idx',
+                            'lidar_path', 'img_path', 'transformation_3d_flow', 'pcd_rotation',
+                            'pcd_scale_factor', 'pcd_trans', 'img_aug_matrix',
+                            'lidar_aug_matrix', 'num_pts_feats'
                         ]
                     },
-                    {'type': 'GTDepth', 'keyframe_only': True}
+                    # {'type': 'GTDepth', 'keyframe_only': True}
                 ]
             }
         },
@@ -377,9 +399,9 @@ config_dict = {
     },
     
     # ============ 数据集基本信息 ============
-    'dataset_root': 'data/nuscenes/',
-    'dataset_type': 'NuScenesDataset',
-    
+    'dataset_root' : dataset_root,
+    'dataset_type' : dataset_type,
+
     'object_classes': object_classes_list,
     
     'map_classes': map_classes_list,
@@ -390,22 +412,13 @@ config_dict = {
     'input_modality': input_modality_dict,
     
     'image_size': [256, 704],
-    
-    # ============ Radar配置 ============
-    'radar_sweeps': 6,
-    'radar_max_points': 2500,
-    'radar_normalize': False,
-    'radar_compensate_velocity': True,
-    'radar_filtering': 'none',
-    'radar_jitter': 0,
-    'radar_use_dims': list(range(1, 57)),
-    'radar_voxel_size': [0.8, 0.8, 8],
+
     
     # ============ LiDAR配置 ============
     'load_dim': 5,
     'use_dim': 5,
     'reduce_beams': 32,
-    'voxel_size': [0.075, 0.075, 0.2],
+    'voxel_size': voxel_size,
     
     # ============ 模型配置 ============
     'model': {
@@ -450,12 +463,12 @@ config_dict = {
                     'type': 'DepthLSSTransform',
                     'in_channels': 256,
                     'out_channels': 80,
-                    'image_size': [256, 704],
-                    'feature_size': [32, 88],
-                    'xbound': [-54.0, 54.0, 0.3],
-                    'ybound': [-54.0, 54.0, 0.3],
-                    'zbound': [-10.0, 10.0, 20.0],
-                    'dbound': [1.0, 60.0, 0.5],
+                    'image_size': [288, 1120],
+                    'feature_size': [36, 140],
+                    'xbound': [0.0, 72.0, 0.3],
+                    'ybound': [-40.8, 40.8, 0.3],
+                    'zbound': [-5.0, 5.0, 10.0],
+                    'dbound': [1.0, 80.0, 0.5],
                     'downsample': 2
                 }
             },
@@ -463,15 +476,16 @@ config_dict = {
             # LiDAR编码器
             'lidar': {
                 'voxelize': {
-                    'max_num_points': 10,
-                    'max_voxels': [120000, 160000],
+                    'max_num_points': 5,
+                    'max_voxels': [16000, 40000],
                     'point_cloud_range': point_cloud_range,
-                    'voxel_size': [0.075, 0.075, 0.2]
+                    'voxel_size': voxel_size,
+                     'voxelize_reduce': True
                 },
                 'backbone': {
                     'type': 'SparseEncoder',
                     'in_channels': 5,
-                    'sparse_shape': [1440, 1440, 41],
+                    'sparse_shape': sparse_shape,
                     'output_channels': 128,
                     'encoder_channels': [
                         [16, 16, 32],
@@ -524,7 +538,7 @@ config_dict = {
         'heads': {
             'object': {
                 'type': 'TransFusionHead',
-                'num_classes': 10,
+                'num_classes': 3,
                 'in_channels': 512,
                 'hidden_channel': 128,
                 'ffn_channel': 256,
@@ -533,7 +547,7 @@ config_dict = {
                 'num_proposals': 200,
                 'nms_kernel_size': 3,
                 'activation': 'relu',
-                'dropout': 0.3,
+                'dropout': 0.1,
                 'bn_momentum': 0.1,
                 'auxiliary': True,
                 
@@ -543,29 +557,30 @@ config_dict = {
                     'height': [1, 2],
                     'dim': [3, 2],
                     'rot': [2, 2],
-                    'vel': [2, 2]
+                    # 'vel': [2, 2]
                 },
                 
                 # 边界框编码器
                 'bbox_coder': {
                     'type': 'TransFusionBBoxCoder',
                     'code_size': 10,
-                    'post_center_range': [-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
+                    'post_center_range': [-15, -60, -10.0, 85, 60, 10.0],
                     'score_threshold': 0.0,
-                    'pc_range': [-54.0, -54.0],
-                    'voxel_size': [0.075, 0.075],
-                    'out_size_factor': 8
+                    'pc_range': point_cloud_range[:2],
+                    'voxel_size': voxel_size[:2],
+                    'out_size_factor': 8,
+                    'code_size': 8
                 },
                 
                 # 损失函数配置
                 'loss_heatmap': {
                     'type': 'GaussianFocalLoss',
-                    'loss_weight': 1.0,
+                    'loss_weight': 0.25,
                     'reduction': 'mean'
                 },
                 'loss_bbox': {
                     'type': 'L1Loss',
-                    'loss_weight': 0.25,
+                    'loss_weight': 2.0,
                     'reduction': 'mean'
                 },
                 'loss_cls': {
@@ -579,7 +594,7 @@ config_dict = {
                 
                 # 训练配置
                 'train_cfg': {
-                    'dataset': 'nuScenes',
+                    'dataset': 'kitti',
                     'assigner': {
                         'type': 'HungarianAssigner3D',
                         'cls_cost': {
@@ -603,21 +618,21 @@ config_dict = {
                     },
                     'gaussian_overlap': 0.1,
                     'min_radius': 2,
-                    'grid_size': [1440, 1440, 41],
-                    'voxel_size': [0.075, 0.075, 0.2],
+                    'grid_size': sparse_shape,
+                    'voxel_size': voxel_size,
                     'out_size_factor': 8,
                     'point_cloud_range': point_cloud_range,
-                    'code_weights': [1.0] * 8 + [0.2, 0.2],
+                    'code_weights': [1.0] * 8,
                     'pos_weight': -1
                 },
                 
                 # 测试配置
                 'test_cfg': {
-                    'dataset': 'nuScenes',
-                    'grid_size': [1440, 1440, 41],
-                    'voxel_size': [0.075, 0.075],
+                    'dataset': 'kitti',
+                    'grid_size': sparse_shape,
+                    # 'voxel_size': [0.075, 0.075],
                     'out_size_factor': 8,
-                    'pc_range': [-54.0, -54.0],
+                    # 'pc_range': [-54.0, -54.0],
                     'nms_type': None
                 }
             },
@@ -628,7 +643,7 @@ config_dict = {
     # ============ 优化器配置 ============
     'optimizer': {
         'type': 'AdamW',
-        'lr': 0.000001,
+        'lr': 0.00005,
         'weight_decay': 0.01
     },
     
@@ -654,10 +669,10 @@ config_dict = {
     # ============ 训练运行配置 ============
     'runner': {
         'type': 'CustomEpochBasedRunner',
-        'max_epochs': 20
+        'max_epochs': 6
     },
     
-    'max_epochs': 100,
+    'max_epochs': 6,
     'gt_paste_stop_epoch': -1,
     
     # ============ 评估配置 ============
@@ -676,7 +691,7 @@ config_dict = {
     },
     
     # ============ 检查点与恢复 ============
-    'load_from':  'pretrained/bevfusion-det.pth',
+    'load_from': 'pretrained/lidar-only-det.pth',
     'resume_from': None,
     
     # ============ 混合精度训练 ============

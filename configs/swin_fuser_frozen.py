@@ -375,6 +375,34 @@ config_dict = {
             'pipeline': test_val_eval_pipeline
         }
     },
+    'custom_hooks': [
+        # freeze hook
+        {
+            'type': 'SimpleFreezeHook',
+            'freeze_epochs': 10,  # 前5个epoch冻结
+            'freeze_prefixes': [
+                'encoders.camera',
+                # 'encoders.camera.neck',
+                'encoders.lidar',
+                'decoder',
+                'heads'
+            ]
+        },
+
+        # 检查Hook（可选）
+        {
+            'type': 'CheckFreezeHook',
+            'freeze_epochs': 5,  # 与上面一致
+            'freeze_prefixes': [
+                'encoders.camera.backbone',
+                'encoders.camera.neck',
+                'encoders.lidar',
+                'decoder',
+                'heads'
+            ],
+            'check_interval': 2  # 每2个epoch检查一次
+        }
+    ],
     
     # ============ 数据集基本信息 ============
     'dataset_root': 'data/nuscenes/',

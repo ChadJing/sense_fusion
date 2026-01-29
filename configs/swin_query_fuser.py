@@ -35,7 +35,7 @@ test_val_eval_pipeline = [
                 # 3. 加载多帧点云
                 {
                     'type': 'LoadPointsFromMultiSweeps',
-                    'sweeps_num': 9,
+                    'sweeps_num': 0,
                     'load_dim': 5,
                     'use_dim': 5,
                     'pad_empty_sweeps': True,
@@ -654,7 +654,7 @@ config_dict = {
     # ============ 优化器配置 ============
     'optimizer': {
         'type': 'AdamW',
-        'lr': 0.0002,
+        'lr': 0.00005,
         'weight_decay': 0.01
     },
     
@@ -729,3 +729,14 @@ if __name__ == '__main__':
     print(f"训练轮数: {cfg.max_epochs}")
     print(f"输入模态: 相机={cfg.input_modality.use_camera}, LiDAR={cfg.input_modality.use_lidar}")
     print(f"检测类别数: {len(cfg.object_classes)}")
+    print("=== 分布式环境检查 ===")
+    import os
+    import torch.distributed as dist
+    print(f"MASTER_ADDR: {os.environ.get('MASTER_ADDR', '未设置')}")
+    print(f"MASTER_PORT: {os.environ.get('MASTER_PORT', '未设置')}")
+    print(f"RANK: {os.environ.get('RANK', '未设置')}")
+    print(f"WORLD_SIZE: {os.environ.get('WORLD_SIZE', '未设置')}")
+    print(f"LOCAL_RANK: {os.environ.get('LOCAL_RANK', '未设置')}")
+    print(f"dist.is_available(): {dist.is_available()}")
+    print(f"dist.is_initialized(): {dist.is_initialized()}")
+    print("===================\n")

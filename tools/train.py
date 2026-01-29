@@ -24,13 +24,16 @@ def main():
     parser.add_argument("config", metavar="FILE", help="config file")
     parser.add_argument("--run-dir", metavar="DIR", help="run directory")
     args, opts = parser.parse_known_args()
+    if args.config.endswith(".yaml"):
+        configs.load(args.config, recursive=True)
+        configs.update(opts)
+        cfg = Config(recursive_eval(configs), filename=args.config)
+    elif args.config.endswith(".py"):
+        cfg=Config.fromfile(args.config)
+        cfg=Config(cfg['config_dict'])
+    else:
+        print(f"wrong config file format.")
 
-    # configs.load(args.config, recursive=True)
-    # configs.update(opts)
-
-    # cfg = Config(recursive_eval(configs), filename=args.config)
-    cfg=Config.fromfile(args.config)
-    cfg=Config(cfg['config_dict'])
     torch.backends.cudnn.benchmark = cfg.cudnn_benchmark
     torch.cuda.set_device(dist.local_rank())
 

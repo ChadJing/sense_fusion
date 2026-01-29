@@ -125,9 +125,7 @@ class BEVFusion(Base3DFusionModel):
         x = self.encoders["camera"]["backbone"](x)
         if not isinstance(self.encoders["camera"]["backbone"], DINOBackbone):
             x = self.encoders["camera"]["neck"](x) # if dino close it
-        if isinstance(x, torch.Tensor):
-            BN, C, H, W = x.size()
-            x = x.view(B, int(BN / B), C, H, W)
+
 
         if isinstance(self.encoders["camera"]["vtransform"], BEVTransformer):
             spatial_shapes = []
@@ -153,6 +151,10 @@ class BEVFusion(Base3DFusionModel):
                 img_metas=img_metas,
             )
         else: # lss的方式
+            if not isinstance(x, torch.Tensor):
+                x=x[0]
+            BN, C, H, W = x.size()
+            x = x.view(B, int(BN / B), C, H, W)
             x = self.encoders["camera"]["vtransform"](
                 x,
                 points,
